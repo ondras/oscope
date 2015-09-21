@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<script src="js/object.assign.js"></script>
+		<script src="js/performance.now.js"></script>
+		<script src="js/oscope.js"></script>
+		<link rel="stylesheet" href="style.css" />
+	</head>
+	<body>
+		<script>
+		var d = new O.Display({xy:true});
+		document.body.appendChild(d.getNode());
+
+		var i1 = new O.MathInput(function(x, t) {
+			return Math.sin((x + t/1000) * 2 * Math.PI);
+		});
+		d.addInput(i1);
+
+		var i2 = new O.MathInput(function(x, t) {
+			return Math.cos((2*x + t/1000) * 2 * Math.PI);
+		});
+		d.addInput(i2);
+/*
+
+var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+// create Oscillator node
+var oscillator = audioCtx.createOscillator();
+
+oscillator.type = 'sine';
+oscillator.frequency.value = 603; // value in hertz
+
+
+
+var i = new O.WebAudioInput(audioCtx);
+d.addInput(i);
+
+oscillator.connect(i.audioNode);
+oscillator.start();
+*/
+
+d.start();
+
+		</script>
+	</body>
+</html>
