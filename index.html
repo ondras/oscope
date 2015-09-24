@@ -2,46 +2,74 @@
 <html>
 	<head>
 		<meta charset="utf-8" />
-		<script src="js/object.assign.js"></script>
-		<script src="js/performance.now.js"></script>
-		<script src="js/oscope.js"></script>
+		<title>oscope.js demo</title>
 		<link rel="stylesheet" href="style.css" />
 	</head>
 	<body>
-		<script>
-		var d = new O.Display({xy:true});
-		document.body.appendChild(d.getNode());
+		<h1>oscope.js demo</h1>
+		<fieldset id="settings">
+			<legend>Settings</legend>
+			<label>Volume: <input type="range" /></label>
+			<label>Multiple input mode:
+				<select>
+					<option value="overlay">Overlay</option>
+					<option value="scale">Scale</option>
+					<option value="xy">XY</option>
+				</select>
+			</label>
+		</fieldset>
 
-		var i1 = new O.MathInput(function(x, t) {
-			return Math.sin((x + t/1000) * 2 * Math.PI);
-		});
-		d.addInput(i1);
+		<fieldset id="mode">
+			<legend>Mode</legend>
 
-		var i2 = new O.MathInput(function(x, t) {
-			return Math.cos((2*x + t/1000) * 2 * Math.PI);
-		});
-		d.addInput(i2);
-/*
+			<input type="radio" name="mode" id="mode-math" value="math" />
+			<label for="mode-math">Math function</label>
+			<section id="math">
+				<label>
+					#1: <code>function(x, t) {</code>
+					<input type="text" value="return Math.sin((x + t/1000) * 2 * Math.PI)" />
+					<code>}</code>
+				</label>
+				<label>
+					#2: <code>function(x, t) {</code>
+					<input type="text" value="return Math.cos(x * 2 * Math.PI)" />
+					<code>}</code>
+				</label>
+			</section>
+			
+			<input type="radio" name="mode" id="mode-signal" value="signal" />
+			<label for="mode-signal">Web Audio Signal</label>
+			<section id="signal">
+				<label>Frequency #1: <input type="range" min="20" max="1000" value="440" /><span></span></label>
+				<label>Shape #1: <select>
+					<option value="sine">Sine</option>
+					<option value="square">Square</option>
+					<option value="triangle">Triangle</option>
+					<option value="sawtooth">Sawtooth</option>
+				</select></label>
+				<label>Frequency #2: </label>
+				<label>Shape #2: </label>
+			</section>
 
-var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+			<input type="radio" name="mode" id="mode-file" value="file" />
+			<label for="mode-file">Local sound file</label>
+			<section id="file">
+				<label><input type="file" /></label>
+			</section>
 
-// create Oscillator node
-var oscillator = audioCtx.createOscillator();
+			<input type="radio" name="mode" id="mode-mic" value="mic" />
+			<label for="mode-mic">Microphone input</label>
+		</fieldset>
+		
+		<footer>
+			&copy; 2015 <a href="http://ondras.zarovi.cz/">Ondřej Žára</a>, <a href="https://github.com/ondras/oscope/">GitHub</a>
+		</footer>
 
-oscillator.type = 'sine';
-oscillator.frequency.value = 603; // value in hertz
+		<script src="js/object.assign.js"></script>
+		<script src="js/performance.now.js"></script>
+		<script src="js/oscope.js"></script>
+		<script src="js/app.js"></script>
 
-
-
-var i = new O.WebAudioInput(audioCtx);
-d.addInput(i);
-
-oscillator.connect(i.audioNode);
-oscillator.start();
-*/
-
-d.start();
-
-		</script>
+		<script>App.init();</script>
 	</body>
 </html>

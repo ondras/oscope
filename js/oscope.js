@@ -3,7 +3,7 @@ var O = {};
 O.Display = function(options) {
 	this._options = Object.assign({
 		pixelsPerSample: 3,
-		xy: false
+		multiMode: "overlay" // "overlay", "scale", "xy"
 	}, options);
 
 	this._inputs = [];
@@ -20,6 +20,10 @@ Object.assign(O.Display.prototype, {
 	addInput: function(input) {
 		this._inputs.push(input);
 		return this;
+	},
+	
+	clearInputs: function() {
+		this._inputs = [];
 	},
 
 	configure: function(options) {
@@ -59,17 +63,28 @@ Object.assign(O.Display.prototype, {
 			this._ctx.clearRect(0, 0, canvas.width, canvas.height);
 		}
 
-		if (this._options.xy && values.length > 1) {
-			this._inputs[0].applyStyle(this._ctx);
-			this._drawXY(values[0], values[1]);
-		} else {
-			values.forEach(this._drawWave, this);
+		if (values.length == 1) {
+			this._drawWave(values[0], 0);
+		} else if (values.length > 1) {
+			switch (this._options.multiMode) {
+				case "xy":
+					this._drawXY(values[0], values[1]);
+				break;
+				
+				case "overlay":
+				case "scale":
+					values.forEach(this._drawWave, this);
+				break;
+			}
 		}
 	},
 
 	_drawXY: function(valuesX, valuesY) {
 		var c = this._ctx;
 		var o = this._options;
+
+		this._inputs[0].applyStyle(c);
+
 		c.beginPath();
 
 		var scaleX = c.canvas.width / 2;
@@ -100,6 +115,11 @@ Object.assign(O.Display.prototype, {
 		var scaleX = c.canvas.width / (values.length-1);
 		var scaleY = c.canvas.height / 2;
 		var offsetY = scaleY;
+		
+		if (o.multiMode == "scale") {
+			scaleY *= 1/this._inputs.length;
+			offsetY = 2 * scaleY * (index+0.5);
+		}
 
 		values.forEach(function(value, index) {
 			var x = index * scaleX;
@@ -148,27 +168,27 @@ Object.assign(O.Input.prototype, {
 		} else {
 			context.shadowBlur = 0;
 		}
-
 	}
 });
 
-O.MathInput = function(func) {
-	O.Input.call(this);
+O.MathInput = function(func, options) {
+	O.Input.call(this, options);
 	this._func = func;
 }
 Object.assign(O.MathInput.prototype, O.Input.prototype, {
 	getData: function(samples) {
 		var results = [];
 		var t = performance.now();
+		var scale = this._options.scale;
 		for (var i=0;i<samples;i++) {
-			results.push(this._func(i/(samples-1), t));
+			results.push(this._func(i/(samples-1), t) * scale);
 		}
 		return results;
 	}
 });
 
-O.WebAudioInput = function(audioContext, fftSize) {
-	O.Input.call(this);
+O.WebAudioInput = function(audioContext, fftSize, options) {
+	O.Input.call(this, options);
 	this._analyser = audioContext.createAnalyser();
 	this._analyser.fftSize = fftSize || 512
 	this._analyser.smoothingTimeConstant = 1;
@@ -182,14 +202,14 @@ Object.assign(O.WebAudioInput.prototype, O.Input.prototype, {
 
 	getData: function(samples) {
 		this._analyser.getFloatTimeDomainData(this._data);
-
+		var scale = this._options.scale;
 		var results = [];
+
 		for (var i=0;i<samples;i++) {
-			var index = Math.round(i * (dataLength-1) / (samples-1));
-			results.push(data[index]);
+			var index = Math.round(i * (this._data.length-1) / (samples-1));
+			results.push(this._data[index] * scale);
 		}
 
 		return results;
 	}
 });
-
