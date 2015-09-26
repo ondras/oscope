@@ -13,7 +13,17 @@ canvas {
 	height: 96vmin;
 	background-color: #032b5c;
 	float: left;
-	margin-right: 2vmin
+	margin-right: 2vmin;
+}
+
+#fps {
+	position: absolute;
+	right: 4px;
+	top: 5px;
+}
+
+#fps::after {
+	content: " fps";
 }
 
 footer {

@@ -11,10 +11,17 @@
 			<legend>Settings</legend>
 			<label>Volume: <input type="range" /></label>
 			<label>Multiple input mode:
-				<select>
+				<select id="multiMode">
 					<option value="overlay">Overlay</option>
 					<option value="scale">Scale</option>
 					<option value="xy">XY</option>
+				</select>
+			</label>
+			<label>Pixels per sample:
+				<select id="pps">
+					<option value="0.5">0.5</option>
+					<option value="1">1</option>
+					<option selected="selected" value="3">3</option>
 				</select>
 			</label>
 		</fieldset>
@@ -40,6 +47,7 @@
 			<input type="radio" name="mode" id="mode-signal" value="signal" />
 			<label for="mode-signal">Web Audio Signal</label>
 			<section id="signal">
+				<label><input type="checkbox" checked="checked" />Stabilize</label>
 				<label>Frequency #1: <input type="range" min="20" max="1000" value="440" /><span></span></label>
 				<label>Shape #1: <select>
 					<option value="sine">Sine</option>

@@ -2,12 +2,19 @@ var O = {};
 
 O.Display = function(options) {
 	this._options = Object.assign({
-		pixelsPerSample: 3,
-		multiMode: "overlay" // "overlay", "scale", "xy"
+		pixelsPerSample: 1,
+		multiMode: "overlay", // "overlay", "scale", "xy"
 	}, options);
 
 	this._inputs = [];
 	this._ctx = document.createElement("canvas").getContext("2d");
+	this._fps = {
+		time: 0,
+		node: document.createElement("div"),
+		count: 0
+	}
+	this._fps.node.id = "fps";
+
 	this._frame = null;
 	this._tick = this._tick.bind(this);
 }
@@ -15,6 +22,10 @@ O.Display = function(options) {
 Object.assign(O.Display.prototype, {
 	getNode: function() {
 		return this._ctx.canvas;
+	},
+	
+	getFPS: function() {
+		return this._fps.node;
 	},
 
 	addInput: function(input) {
@@ -48,6 +59,15 @@ Object.assign(O.Display.prototype, {
 
 	_tick: function() {
 		this._frame = requestAnimationFrame(this._tick);
+		
+		this._fps.count++;
+		if (this._fps.count == 10) {
+			var now = performance.now();
+			this._fps.node.innerHTML = ~~(1000 * this._fps.count / (now-this._fps.time));
+			this._fps.count = 0;
+			this._fps.time = now;
+		}
+
 		this._draw();
 	},
 
@@ -55,7 +75,7 @@ Object.assign(O.Display.prototype, {
 		var canvas = this._ctx.canvas;
 		var samples = Math.floor(Math.max(canvas.width, canvas.height) / this._options.pixelsPerSample);
 		var values = this._inputs.map(function(input) { return input.getData(samples); });
-
+	
 		if (canvas.width != canvas.clientWidth || canvas.height != canvas.clientHeight) {
 			canvas.width = canvas.clientWidth;
 			canvas.height = canvas.clientHeight;
@@ -78,7 +98,7 @@ Object.assign(O.Display.prototype, {
 			}
 		}
 	},
-
+	
 	_drawXY: function(valuesX, valuesY) {
 		var c = this._ctx;
 		var o = this._options;
@@ -94,7 +114,7 @@ Object.assign(O.Display.prototype, {
 
 		valuesX.forEach(function(value, index) {
 			var x = offsetX + valuesX[index] * scaleX;
-			var y = offsetY + valuesY[index] * scaleY;
+			var y = offsetY - valuesY[index] * scaleY;
 			if (index) {
 				c.lineTo(x, y);
 			} else {
@@ -136,15 +156,19 @@ Object.assign(O.Display.prototype, {
 });
 
 O.Input = function(options) {
-	this._options = Object.assign({
-		color: "#80ffff",
-		shadow: "#fff",
-		lineWidth: 4,
-		scale: 0.9
-	}, options);
+	this._options = Object.assign(this._defaultOptions(), options);
 }
 
 Object.assign(O.Input.prototype, {
+	_defaultOptions: function() {
+		return {
+			color: "#80ffff",
+			shadow: "#fff",
+			lineWidth: 4,
+			scale: 0.9
+		};
+	},
+
 	configure: function(options) {
 		Object.assign(this._options, options);
 		return this;
@@ -187,15 +211,22 @@ Object.assign(O.MathInput.prototype, O.Input.prototype, {
 	}
 });
 
-O.WebAudioInput = function(audioContext, fftSize, options) {
+O.WebAudioInput = function(audioContext, options) {
 	O.Input.call(this, options);
 	this._analyser = audioContext.createAnalyser();
-	this._analyser.fftSize = fftSize || 512
+	this._analyser.fftSize = this._options.fftSize;
 	this._analyser.smoothingTimeConstant = 1;
 	this._data = new Float32Array(this._analyser.frequencyBinCount);
 }
 
 Object.assign(O.WebAudioInput.prototype, O.Input.prototype, {
+	_defaultOptions: function() {
+		return Object.assign(O.Input.prototype._defaultOptions(), {
+			stabilize: false,
+			fftSize: 2048
+		});
+	},
+
 	getAudioNode: function() {
 		return this._analyser;
 	},
@@ -204,12 +235,30 @@ Object.assign(O.WebAudioInput.prototype, O.Input.prototype, {
 		this._analyser.getFloatTimeDomainData(this._data);
 		var scale = this._options.scale;
 		var results = [];
+		
+		var start = 0;
+		if (this._options.stabilize) {
+			/* start with a positive zero crossing */
+			start = this._findZeroCrossing(this._data.length-samples);
+		}
+		
+		var count = Math.min(samples, this._data.length);
 
 		for (var i=0;i<samples;i++) {
-			var index = Math.round(i * (this._data.length-1) / (samples-1));
-			results.push(this._data[index] * scale);
+			results.push(this._data[start+i] * scale);
 		}
 
 		return results;
+	},
+	
+	_findZeroCrossing: function(limit) {
+		var index = -1;
+		for (var i=0;i<limit;i++) {
+			var val = this._data[i];
+			if (val < 0) { index = i; }
+			if (val >= 0 && index > -1) { return i; }
+		}
+		return 0;
 	}
+
 });

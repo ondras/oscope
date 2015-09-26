@@ -16,9 +16,12 @@ var App = {
 			input.addEventListener("change", this);
 		}
 		
-		this._multiMode = document.querySelector("#settings select");
+		this._multiMode = document.querySelector("#settings #multiMode");
 		this._multiMode.addEventListener("change", this);
 		
+		this._pps = document.querySelector("#settings #pps");
+		this._pps.addEventListener("change", this);
+
 		this._volume = document.querySelector("#settings [type=range]");
 		this._volume.addEventListener("input", this);
 		
@@ -26,14 +29,15 @@ var App = {
 		this._gain.gain.value = this._volume.value/100;
 		this._gain.connect(this._ctx.destination);
 		
-		this._oscope = new O.Display({multiMode:this._multiMode.value});
+		this._oscope = new O.Display({multiMode:this._multiMode.value, pixelsPerSample:Number(this._pps.value)});
 		document.body.insertBefore(this._oscope.getNode(), document.body.firstChild);
+		document.body.appendChild(this._oscope.getFPS());
 		this._oscope.start();
 
 		this._setMode("math");
 	},
 	
-	createMultipleInputs: function(source, destination) {
+	createMultipleInputs: function(source, destination, options) {
 		var ctx = source.context;
 
 		var splitter = ctx.createChannelSplitter();
@@ -44,7 +48,7 @@ var App = {
 
 		var inputs = [];
 		for (var i=0;i<source.channelCount;i++) {
-			var input = new O.WebAudioInput(ctx);
+			var input = new O.WebAudioInput(ctx, options);
 			var node = input.getAudioNode();
 			// source.connect(target, sourceOutput, targetInput
 			splitter.connect(node, i, 0);
@@ -61,6 +65,10 @@ var App = {
 				this._oscope.configure({multiMode:this._multiMode.value});
 			break;
 			
+			case this._pps:
+				this._oscope.configure({pixelsPerSample:Number(this._pps.value)});
+			break;
+
 			case this._volume:
 				this._gain.gain.value = e.target.value / 100;
 			break;
@@ -126,14 +134,15 @@ Object.assign(App.Math.prototype, {
 
 App.Signal = function() {
 	this._oscillators = [];
+	this._inputs = [];
 	
-	var input = document.querySelector("#signal input");
+	var input = document.querySelector("#signal [type=range]");
 	var span = document.querySelector("#signal span");
-	document.querySelector("#signal label:nth-child(3)").appendChild(input.cloneNode(true));
-	document.querySelector("#signal label:nth-child(3)").appendChild(span.cloneNode(true));
+	document.querySelector("#signal label:nth-child(4)").appendChild(input.cloneNode(true));
+	document.querySelector("#signal label:nth-child(4)").appendChild(span.cloneNode(true));
 
 	var select = document.querySelector("#signal select");
-	document.querySelector("#signal label:nth-child(4)").appendChild(select.cloneNode(true));
+	document.querySelector("#signal label:nth-child(5)").appendChild(select.cloneNode(true));
 	
 	var all = document.querySelectorAll("#signal input, #signal select");
 	Array.from(all).forEach(function(input) {
@@ -154,6 +163,7 @@ Object.assign(App.Signal.prototype, {
 			o.connect(node);
 			node.connect(destination);
 			oscope.addInput(waInput);
+			this._inputs.push(waInput);
 		}
 		this._updateParams();
 	},
@@ -164,6 +174,7 @@ Object.assign(App.Signal.prototype, {
 			o.disconnect();
 		});
 		this._oscillators = [];
+		this._inputs = [];
 
 		oscope.clearInputs();
 	},
@@ -181,6 +192,11 @@ Object.assign(App.Signal.prototype, {
 			o.frequency.value = freqs[index].value;
 			o.type = types[index].value;
 			spans[index].innerHTML = o.frequency.value + " Hz";
+		});
+		
+		var stabilize = document.querySelector("#signal [type=checkbox]").checked;
+		this._inputs.forEach(function(input) {
+			input.configure({stabilize:stabilize});
 		});
 	}
 });
@@ -226,7 +242,7 @@ Object.assign(App.File.prototype, {
 		var ctx = this._destination.context;
 		var source = ctx.createMediaElementSource(this._audio);
 		
-		var inputs = App.createMultipleInputs(source, this._destination);
+		var inputs = App.createMultipleInputs(source, this._destination, {lineWidth:2, scale:1});
 		inputs.forEach(this._oscope.addInput, this._oscope);
 	}
 });
@@ -261,7 +277,7 @@ Object.assign(App.Mic.prototype, {
 	},
 	
 	_connect: function(oscope) {
-		var inputs = App.createMultipleInputs(this._source, this._destination);
+		var inputs = App.createMultipleInputs(this._source, this._destination, {lineWidth:2, scale:1});
 		inputs.forEach(oscope.addInput, oscope);
 	}
 });
