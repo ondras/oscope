@@ -59,9 +59,17 @@
 				<label>Shape #2: </label>
 			</section>
 
-			<input type="radio" name="mode" id="mode-file" value="file" />
-			<label for="mode-file">Local sound file</label>
-			<section id="file">
+			<input type="radio" name="mode" id="mode-remote" value="remote" />
+			<label for="mode-remote">Remote sound file</label>
+			<section id="remote">
+				<form>
+					<label>URL: <input type="text" value="jerobeam.ogg" /><input type="submit" value="Load" /></label>
+				</form>
+			</section>
+
+			<input type="radio" name="mode" id="mode-local" value="local" />
+			<label for="mode-local">Local sound file</label>
+			<section id="local">
 				<label><input type="file" /></label>
 			</section>
 

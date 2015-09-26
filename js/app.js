@@ -8,7 +8,8 @@ var App = {
 
 		this._modes.math = new App.Math();
 		this._modes.signal = new App.Signal();
-		this._modes.file = new App.File();
+		this._modes.remote = new App.Remote();
+		this._modes.local = new App.Local();
 		this._modes.mic = new App.Mic();
 		
 		for (var p in this._modes) {
@@ -205,8 +206,6 @@ App.File = function() {
 	this._oscope = null;
 	this._destination = null;
 	this._audio = null;
-
-	document.querySelector("#file input").addEventListener("change", this);
 }
 
 Object.assign(App.File.prototype, {
@@ -220,6 +219,19 @@ Object.assign(App.File.prototype, {
 		this._clear();
 	},
 	
+	_play: function(url, parent) {
+		this._audio = new Audio(url);
+		this._audio.autoplay = true;
+		this._audio.controls = true;
+		parent.appendChild(this._audio);
+
+		var ctx = this._destination.context;
+		var source = ctx.createMediaElementSource(this._audio);
+		
+		var inputs = App.createMultipleInputs(source, this._destination, {lineWidth:2, scale:1});
+		inputs.forEach(this._oscope.addInput, this._oscope);
+	},
+	
 	_clear: function() {
 		if (!this._audio) { return; }
 
@@ -228,22 +240,41 @@ Object.assign(App.File.prototype, {
 		this._audio = null;
 		
 		this._oscope.clearInputs();
-	},
-	
+	}
+});
+
+App.Remote = function() {
+	App.File.call(this);
+	document.querySelector("#remote form").addEventListener("submit", this);
+}
+
+Object.assign(App.Remote.prototype, App.File.prototype, {
 	handleEvent: function(e) {
+		e.preventDefault();
 		this._clear();
 
-		var url = URL.createObjectURL(e.target.files[0]);
-		this._audio = new Audio(url);
-		this._audio.autoplay = true;
-		this._audio.controls = true;
-		document.querySelector("#file").appendChild(this._audio);
+		var url = document.querySelector("#remote input[type=text]").value;
+		this._play(url, document.querySelector("#remote"));
 
 		var ctx = this._destination.context;
 		var source = ctx.createMediaElementSource(this._audio);
 		
 		var inputs = App.createMultipleInputs(source, this._destination, {lineWidth:2, scale:1});
 		inputs.forEach(this._oscope.addInput, this._oscope);
+	}
+});
+
+App.Local = function() {
+	App.File.call(this);
+	document.querySelector("#local input").addEventListener("change", this);
+}
+
+Object.assign(App.Local.prototype, App.File.prototype, {
+	handleEvent: function(e) {
+		this._clear();
+
+		var url = URL.createObjectURL(e.target.files[0]);
+		this._play(url, document.querySelector("#local"));
 	}
 });
 
