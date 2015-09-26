@@ -27,8 +27,8 @@ var App = {
 		this._volume.addEventListener("input", this);
 		
 		this._gain = this._ctx.createGain();
-		this._gain.gain.value = this._volume.value/100;
 		this._gain.connect(this._ctx.destination);
+		this._syncVolume();
 		
 		this._oscope = new O.Display({multiMode:this._multiMode.value, pixelsPerSample:Number(this._pps.value)});
 		document.body.insertBefore(this._oscope.getNode(), document.body.firstChild);
@@ -71,7 +71,7 @@ var App = {
 			break;
 
 			case this._volume:
-				this._gain.gain.value = e.target.value / 100;
+				this._syncVolume();
 			break;
 
 			default:
@@ -86,6 +86,10 @@ var App = {
 		this._mode = mode;
 		this._modes[this._mode].start(this._oscope, this._gain);
 		return this;
+	},
+	
+	_syncVolume: function() {
+		this._gain.gain.value = Math.pow(this._volume.value/100, 2);
 	}
 }
 
