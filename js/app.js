@@ -35,7 +35,7 @@ var App = {
 		document.body.appendChild(this._oscope.getFPS());
 		this._oscope.start();
 
-		this._setMode("math");
+		this._setMode("remote");
 	},
 	
 	createMultipleInputs: function(source, destination, options) {
